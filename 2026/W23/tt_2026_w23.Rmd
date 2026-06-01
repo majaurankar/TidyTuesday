@@ -11,77 +11,35 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggrepel)
 library(lubridate)
+library(ggtext)
 ```
 
 ```{r}
 game_films <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2026/2026-06-09/game_films.csv')
 ```
-
 ```{r}
+highlight_title <- "Final Fantasy VII: Advent Children"
+
 game_films %>% 
   ggplot(aes(x = rotten_tomatoes, y = metacritic)) + 
-  geom_point(alpha = 0.3) +
-  geom_point(data = ~ filter(.x, title == "Final Fantasy VII: Advent Children"),
-    color = "black", size = 2) +
-  geom_text_repel(data = game_films %>% filter(title == "Final Fantasy VII: Advent Children"), aes(label = title)) +
-  expand_limits(y = 0) + 
-  theme_minimal() + 
-  labs(x = "Rotten Tomatoes critic score", y = "Metacritic score", title = "XXXXX", caption = "XXXXX")
-
-# NOTE: only theatrical releases have this
+  geom_point(color = "grey65", alpha = 0.45, size = 2.4) +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 0.7, linetype = "dashed", color = "grey45") +
+  geom_point(data = ~ filter(.x, title == highlight_title), color = "#D55E00", size = 4) +
+  geom_text_repel(data = ~ filter(.x, title == highlight_title), aes(label = title), color = "#D55E00", 
+                  size = 4.5, nudge_y = 6, nudge_x = 7, segment.color = "#D55E00", segment.linewidth = 0.4, box.padding = 0.5) +
+  labs(
+    title = "Critics agree… except when they don’t",
+    x = "Rotten Tomatoes critic score",
+    y = "Metacritic score") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 22),
+    plot.subtitle = element_text(size = 13, color = "grey30", lineheight = 1.1),
+    plot.caption = element_text(color = "grey45", hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "grey88"),
+    axis.title = element_text(face = "bold"),
+    plot.margin = margin(15, 20, 15, 15)
+  )
 ```
-
-```{r}
-game_films %>% 
-  ggplot(aes(x = rotten_tomatoes, col = category)) + 
-  geom_density() + 
-  theme_minimal()
-```
-
-```{r}
-game_films %>% 
-  filter(release_date <= "2025-12-31") %>% 
-  mutate(year = year(release_date)) %>% 
-  group_by(category, year) %>% 
-  count() %>% 
-  ggplot(aes(x = year, y = n, fill = category)) + 
-  geom_col() + 
-  facet_wrap(~category) + 
-  theme_minimal()
-```
-
-
-```{r}
-game_films %>% 
-  group_by(director) %>% 
-  count() %>% 
-  arrange(desc(n))
-
-
-game_films %>% 
-  filter(str_detect(director, "Kunihiko Yuyama"))
-```
-
-```{r}
-game_films %>% 
-  mutate(year = year(release_date)) %>% 
-  ggplot(aes(x = year, y = metacritic)) + 
-  geom_point() + 
-  expand_limits(y = 0)
-
-game_films %>% 
-  mutate(year = year(release_date)) %>% 
-  ggplot(aes(x = year, y = rotten_tomatoes)) + 
-  geom_point() + 
-  expand_limits(y = 0)
-
-game_films %>% 
-  group_by(original_game_publisher) %>% 
-  count()
-```
-
-
-
-
-
 
