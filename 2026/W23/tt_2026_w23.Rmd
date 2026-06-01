@@ -30,16 +30,19 @@ game_films %>%
   labs(
     title = "Critics agree… except when they don’t",
     x = "Rotten Tomatoes critic score",
-    y = "Metacritic score") +
+    y = "Metacritic score",
+    subtitle = "Rotten Tomatoes and Metacritic scores for video game adaptations") +
   theme_minimal() +
   theme(
-    plot.title = element_text(face = "bold", size = 22),
+    plot.title = element_text(face = "bold", size = 22, color = "grey30"),
     plot.subtitle = element_text(size = 13, color = "grey30", lineheight = 1.1),
     plot.caption = element_text(color = "grey45", hjust = 1),
     panel.grid.minor = element_blank(),
     panel.grid.major = element_line(color = "grey88"),
-    axis.title = element_text(face = "bold"),
+    axis.title = element_text(color = "grey30"),
     plot.margin = margin(15, 20, 15, 15)
   )
+
+ggsave("tt_2026_w23_game_films.png", width = 10, height = 7, dpi = 400, bg = "#FAFAF7")
 ```
 
