@@ -1,0 +1,96 @@
+---
+title: "TidyTuesday - week 22"
+author: "Maja Urankar"
+date: "2026-05-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggrepel)
+library(lubridate)
+```
+
+```{r}
+eplp <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2026/2026-06-02/eplp.csv')
+```
+
+```{r}
+data_clustering <- eplp %>%
+  filter(year == 2024) %>%
+  transmute(
+    country,
+    maternity_leave = mat_m_ld_bb + mat_m_ld_ab + mat_v_ld_bb + mat_v_ld_ab,
+    co_parent_leave = co_ld,
+    job_protected_mother = jp_ld_m,
+    job_protected_coparent = jp_ld_co,
+  ) %>% 
+  mutate(across(where(is.numeric), ~na_if(.x, -98)))
+
+data_clustering_scaled <- data_clustering %>%
+  column_to_rownames("country") %>%
+  scale()
+```
+
+```{r}
+wss <- map_dbl(1:10, ~{kmeans(data_clustering_scaled, centers = .x, nstart = 50)$tot.withinss})
+
+qplot(1:10, wss, geom = c("line", "point"))
+```
+
+```{r}
+set.seed(1803)
+km <- kmeans(data_clustering_scaled, centers = 2, nstart = 50)
+```
+
+```{r}
+pca <- prcomp(data_clustering_scaled)
+
+summary(pca)
+sort(pca$rotation[,1], decreasing = TRUE)
+sort(pca$rotation[,2], decreasing = TRUE)
+
+data_clusters_pc <- as.data.frame(pca$x[, 1:2]) %>%
+  tibble::rownames_to_column("country") %>%
+  mutate(cluster = factor(km$cluster))
+```
+
+
+```{r}
+ggplot(data_clusters_pc, aes(PC1, PC2, color = cluster)) +
+  stat_ellipse(aes(fill = cluster), geom = "polygon", alpha = 0.07, color = NA) +
+  geom_hline(yintercept = 0, linewidth = 0.35, colour = "grey82") +
+  geom_vline(xintercept = 0, linewidth = 0.35, colour = "grey82") +
+  geom_point(size = 2.8, alpha = 0.9) +
+  geom_text_repel(aes(label = country)) +
+  annotate("text", x = 0.1, y = Inf, label = "More leave\naround birth", vjust = 1.5, colour = "grey25", size = 4) +
+  annotate("text", x = 0, y = -Inf, label = "Longer protected\nleave", vjust = -1, colour = "grey25", size = 4) +
+  annotate("text", x = -Inf, y = 0, label = "Shorter leave\nsystems", hjust = -0.1, colour = "grey25", size = 4) +
+  annotate("text", x = Inf, y = 0, label = "Longer leave\nsystems", hjust = 1.1, colour = "grey25", size = 4) +
+  coord_cartesian(clip = "off") +
+  scale_color_manual(values = c("#D95F5F", "#1BA6A6", "#7A8F2A")) +
+  scale_fill_manual(values = c("#D95F5F", "#1BA6A6", "#7A8F2A")) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "none", 
+    panel.grid = element_blank(), 
+    axis.text = element_blank(), 
+    axis.ticks = element_blank(), 
+    axis.title = element_blank(), 
+    plot.title = element_text(face = "bold", size = 22, margin = margin(b = 6)), 
+    plot.subtitle = element_text(size = 13, color = "grey25", margin = margin(b = 20)), 
+    plot.caption = element_text(size = 8.5, color = "grey45", hjust = 1, margin = margin(t = 18)), 
+    plot.background = element_rect(fill = "#FAFAF7", color = NA), 
+    panel.background = element_rect(fill = "#FAFAF7", color = NA), 
+    plot.margin = margin(25, 45, 25, 45)) +
+  labs(
+    title = "Time off after birth in Europe", 
+    subtitle = "Countries grouped by maternity leave, co-parent leave and job-protected leave in 2024", 
+    caption = "Source: S. Spitzer et al., “The European Parenting Leave Policies (EPLP) Dataset”. Zenodo, Nov. 19, 2025. doi: 10.5281/zenodo.17648712")
+
+ggsave("tt_2026_w22_parental_leave_clusters_social.png", width = 10, height = 8, dpi = 400, bg = "#FAFAF7")
+```
+
+
